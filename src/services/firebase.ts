@@ -1,8 +1,6 @@
-// Firebase App (the core Firebase SDK) is always required and must be listed first
-import { initializeApp } from 'firebase/app';
+import { initializeApp } from "firebase/app"
 
-// Add the Firebase products that you want to use
-import { getAuth } from 'firebase/auth';
+import { getAuth, signInWithPopup, GoogleAuthProvider, } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 
 
@@ -17,3 +15,8 @@ const firebaseConfig = {
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
+
+const auth = getAuth();
+const database = getDatabase();
+
+export { firebaseApp, auth, signInWithPopup, GoogleAuthProvider, database }
