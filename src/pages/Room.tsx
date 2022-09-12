@@ -1,22 +1,84 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import logoImg from "../assets/images/logo.svg";
 import { Button } from "../components/Button";
 import { RoomCode } from "../components/RoomCode";
 import { useAuth } from "../hooks/useAuth";
-import { database, firebasePush, firebaseRef } from "../services/firebase";
+import {
+  database,
+  firebasePush,
+  firebaseRef,
+  firebaseValue,
+} from "../services/firebase";
 
 import "../styles/room.scss";
+
+type FirebaseQuestions = Record<
+  string,
+  {
+    author: {
+      name: string;
+      avatar: string;
+    };
+    content: string;
+    isAnswered: boolean;
+    isHighlighted: boolean;
+  }
+>;
+
+type Question = {
+  id: string;
+  author: {
+    name: string;
+    avatar: string;
+  };
+  content: string;
+  isAnswered: boolean;
+  isHighlighted: boolean;
+};
 
 export function Room() {
   const { user } = useAuth();
   const { id } = useParams();
   const [newQuestion, setNewQuestion] = useState("");
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [title, setTitle] = useState("");
 
   if (!id) {
     throw new Error("Unexpected error: Missing room id!");
   }
+
+  useEffect(() => {
+    const roomRef = firebaseRef(database, `rooms/${id}`);
+
+    firebaseValue(
+      roomRef,
+      (snapshot) => {
+        // console.log(snapshot.val());
+        const firebaseQuestions: FirebaseQuestions =
+          snapshot.val().questions ?? {};
+        const parsedQuestions = Object.entries(firebaseQuestions).map(
+          ([key, value]) => {
+            return {
+              id: key,
+              content: value.content,
+              author: value.author,
+              isHighlighted: value.isHighlighted,
+              isAnswered: value.isAnswered,
+            };
+          }
+        );
+        // console.log(parsedQuestions);
+
+        setTitle(snapshot.val().title);
+        setQuestions(parsedQuestions);
+      },
+      {
+        onlyOnce: true,
+      }
+    );
+  }, [id]);
 
   async function handleSendQuestion(event: FormEvent) {
     event.preventDefault();
@@ -56,8 +118,8 @@ export function Room() {
 
       <main className="content">
         <div className="room-title">
-          <h1>Sala React</h1>
-          <span>4 perguntas</span>
+          <h1>Sala {title}</h1>
+          {questions.length > 0 && <span>{questions.length} pergunta(s)</span>}
         </div>
 
         <form onSubmit={handleSendQuestion}>
@@ -89,6 +151,8 @@ export function Room() {
             </Button>
           </div>
         </form>
+
+        {JSON.stringify(questions)}
       </main>
     </div>
   );
